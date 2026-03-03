@@ -47,14 +47,15 @@ CREATE TABLE IF NOT EXISTS messages (
     in_reply_to TEXT,
     status TEXT NOT NULL DEFAULT 'pending',
     created_at TEXT NOT NULL,
-    read_at TEXT
+    read_at TEXT,
+    accepted_at TEXT
 );
 """
 
 VALID_AGENT_RE = re.compile(r"^[a-zA-Z0-9_]{1,50}$")
 VALID_TYPES = {"task", "response", "notification", "config", "approval", "knowledge"}
 VALID_PRIORITIES = {"low", "normal", "high"}
-VALID_STATUSES = {"pending", "read", "processed", "archived", "approved", "rejected"}
+VALID_STATUSES = {"pending", "read", "accepted", "processed", "archived", "approved", "rejected"}
 
 # Activities: in-memory, ephemeral, max 200
 activities_store: deque = deque(maxlen=200)
@@ -90,6 +91,12 @@ def init_db() -> None:
         # Payload column migration (idempotent)
         try:
             conn.execute("ALTER TABLE messages ADD COLUMN payload TEXT")
+        except sqlite3.OperationalError:
+            pass  # column already exists
+
+        # accepted_at column migration (idempotent)
+        try:
+            conn.execute("ALTER TABLE messages ADD COLUMN accepted_at TEXT")
         except sqlite3.OperationalError:
             pass  # column already exists
 
@@ -378,7 +385,9 @@ async def get_message(msg_id: str) -> dict:
 
 @app.patch("/messages/{msg_id}")
 async def update_message_status(msg_id: str, payload: StatusUpdate) -> dict:
-    read_at = datetime.now(timezone.utc).isoformat() if payload.status == "read" else None
+    now = datetime.now(timezone.utc).isoformat()
+    read_at = now if payload.status == "read" else None
+    accepted_at = now if payload.status == "accepted" else None
 
     with get_conn() as conn:
         row = conn.execute("SELECT * FROM messages WHERE id = ?", (msg_id,)).fetchone()
@@ -389,6 +398,11 @@ async def update_message_status(msg_id: str, payload: StatusUpdate) -> dict:
             conn.execute(
                 "UPDATE messages SET status = ?, read_at = ? WHERE id = ?",
                 (payload.status, read_at, msg_id),
+            )
+        elif accepted_at is not None:
+            conn.execute(
+                "UPDATE messages SET status = ?, accepted_at = ? WHERE id = ?",
+                (payload.status, accepted_at, msg_id),
             )
         else:
             conn.execute(
