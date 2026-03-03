@@ -14,7 +14,6 @@
       --text:      #e0e0e0;
       --muted:     #8888aa;
       --border:    #243060;
-
       --okiara:    #4361ee;
       --falkvelt:  #2ec4b6;
 
@@ -22,140 +21,442 @@
       --type-response:     #4361ee;
       --type-notification: #5a5a7a;
       --type-config:       #e9c46a;
-
-      --prio-high:   #e63946;
-      --prio-normal: #4cc9f0;
-      --prio-low:    #5a5a7a;
+      --type-approval:     #f59e0b;
 
       --status-pending:   #e9c46a;
       --status-read:      #2ec4b6;
       --status-processed: #4ade80;
       --status-archived:  #5a5a7a;
-
-      --type-approval:    #f59e0b;
       --status-approved:  #4ade80;
       --status-rejected:  #e63946;
+
+      --prio-high:   #e63946;
+      --prio-normal: #4cc9f0;
+      --prio-low:    #5a5a7a;
+
+      --bg-darker:     #12122a;
+      --surface:       #1e1e3a;
+      --surface-hover: #262650;
+      --topbar-bg:     #0d0d24;
+      --input-bg:      #12122a;
+      --eliah:         #c0c0d0;
+
+      --act-thinking:   #a78bfa;
+      --act-executing:  #4361ee;
+      --act-delegating: #f59e0b;
+      --act-waiting:    #8888aa;
+      --act-completed:  #4ade80;
+      --act-error:      #e63946;
+
+      --online:  #4ade80;
+      --busy:    #f59e0b;
+      --offline: #5a5a7a;
+
+      --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      --sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
     }
 
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-family: var(--sans);
       font-size: 14px;
-      min-height: 100vh;
+      height: 100vh;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
-    /* ---- Status bar ---- */
-    #statusbar {
-      background: var(--accent);
-      padding: 8px 20px;
+    /* ========== TOP BAR ========== */
+    #topbar {
+      height: 44px;
+      min-height: 44px;
+      background: var(--topbar-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+      z-index: 100;
+      flex-shrink: 0;
+    }
+
+    .topbar-left {
       display: flex;
       align-items: center;
       gap: 16px;
+      padding-right: 16px;
+      border-right: 1px solid var(--border);
+    }
+
+    .agent-id {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+
+    .version {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    .presence-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    .presence-dot.online  { background: var(--online);  box-shadow: 0 0 6px var(--online); }
+    .presence-dot.busy    { background: var(--busy);    box-shadow: 0 0 6px var(--busy); }
+    .presence-dot.offline { background: var(--offline); box-shadow: none; }
+
+    .topbar-center {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 0 16px;
+    }
+
+    .metric {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .metric b {
+      color: var(--text);
+      font-weight: 600;
+    }
+    #m-chain { color: var(--act-completed); }
+    #m-chain.invalid { color: var(--act-error); }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+    }
+
+    .notif-bell {
+      position: relative;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      transition: background 0.15s;
+      user-select: none;
+    }
+    .notif-bell:hover { background: var(--surface-hover); }
+
+    .notif-badge {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: var(--prio-high);
+      color: #fff;
+      border-radius: 999px;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 4px;
+      min-width: 14px;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .topbar-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: var(--radius-sm);
+      padding: 4px 12px;
+      font-size: 12px;
+      font-family: var(--sans);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .topbar-btn:hover { background: var(--surface-hover); border-color: var(--okiara); }
+    .topbar-btn.active { background: var(--accent); border-color: var(--okiara); color: #fff; }
+
+    /* ========== DROPDOWN OVERLAYS ========== */
+    .dropdown-panel {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      min-width: 280px;
+      max-width: 360px;
+      z-index: 200;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .dropdown-panel.hidden { display: none; }
+
+    .dropdown-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+
+    /* Notification panel */
+    #notif-panel {
+      top: calc(100% + 8px);
+      right: 140px;
+    }
+
+    .notif-item {
+      padding: 8px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-bottom: 4px;
+      border-left: 3px solid transparent;
+    }
+    .notif-item:hover { background: var(--surface-hover); }
+    .notif-item.type-approval { border-left-color: var(--type-approval); }
+    .notif-item.type-task     { border-left-color: var(--type-task); }
+    .notif-item-from {
+      font-size: 10px;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .notif-item-subj {
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Approve mode panel */
+    #approve-panel {
+      top: calc(100% + 8px);
+      right: 0;
+    }
+
+    .approve-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
       border-bottom: 1px solid var(--border);
     }
-    #statusbar h1 {
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 0.3px;
-      flex: 1;
-    }
-    .dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: #4ade80;
-      display: inline-block;
-      box-shadow: 0 0 6px #4ade80;
-    }
-    .dot.offline { background: #e63946; box-shadow: 0 0 6px #e63946; }
-    #msg-count { color: var(--muted); }
-    #refresh-countdown { color: var(--muted); font-size: 12px; }
+    .approve-row:last-of-type { border-bottom: none; }
 
-    /* ---- Layout ---- */
+    .approve-label {
+      flex: 1;
+      font-size: 13px;
+    }
+
+    .approve-timer {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    /* CSS toggle switch */
+    .toggle-switch {
+      position: relative;
+      width: 36px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: transform 0.2s, background 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background: var(--okiara); border-color: var(--okiara); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(16px); background: #fff; }
+
+    .approve-duration {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      padding: 5px 8px;
+      font-size: 12px;
+      font-family: var(--sans);
+      margin-top: 8px;
+      cursor: pointer;
+    }
+    .approve-duration:focus { outline: none; border-color: var(--okiara); }
+
+    .auto-respond-btn {
+      width: 100%;
+      margin-top: 10px;
+      background: var(--accent);
+      border: 1px solid var(--okiara);
+      color: #fff;
+      border-radius: var(--radius-sm);
+      padding: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .auto-respond-btn:hover { background: var(--okiara); }
+
+    /* ========== DECISION BAR ========== */
+    #decision-bar {
+      background: #1a1400;
+      border-bottom: 1px solid var(--type-approval);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+    #decision-bar.hidden { display: none; }
+
+    .decision-icon { font-size: 15px; color: var(--type-approval); }
+
+    #decision-text { color: var(--type-approval); font-weight: 600; flex-shrink: 0; }
+
+    #decision-actions { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; }
+
+    .decision-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: var(--radius-sm);
+      padding: 3px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .decision-btn.approve-btn { border-color: var(--act-completed); color: var(--act-completed); }
+    .decision-btn.approve-btn:hover { background: #4ade8022; }
+    .decision-btn.reject-btn  { border-color: var(--act-error); color: var(--act-error); }
+    .decision-btn.reject-btn:hover  { background: #e6394622; }
+    .decision-btn.auto { border-color: var(--muted); color: var(--muted); }
+    .decision-btn.auto:hover { border-color: var(--okiara); color: var(--okiara); }
+
+    /* ========== MAIN LAYOUT ========== */
     .main-wrapper {
       display: flex;
       flex: 1;
       overflow: hidden;
-      padding: 16px;
-      gap: 16px;
     }
 
-    /* ---- Feed ---- */
-    #feed-col {
+    /* ========== CHAT PANEL ========== */
+    #chat-panel {
       flex: 1;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      border-right: 1px solid var(--border);
     }
-    #feed-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    #feed-header h2 { font-size: 14px; font-weight: 600; }
-    .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; }
-    .filter-bar select {
-      background: var(--card);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 4px 8px;
-      font-size: 12px;
-      cursor: pointer;
-    }
-    #feed {
+
+    #chat-messages {
       flex: 1;
       overflow-y: auto;
+      padding: 16px 20px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      padding-right: 4px;
+      gap: 12px;
     }
-    #feed::-webkit-scrollbar { width: 5px; }
-    #feed::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
+    #chat-messages::-webkit-scrollbar { width: 5px; }
+    #chat-messages::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
 
-    /* ---- Message card ---- */
-    .msg-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px 16px;
-      transition: border-color 0.2s;
+    /* Chat bubble base */
+    .bubble-wrap {
+      display: flex;
+      flex-direction: column;
+      max-width: 72%;
     }
-    .msg-card:hover { border-color: #4361ee66; }
-    .msg-card.approval-card { border-left: 3px solid var(--type-approval); }
-    .msg-card.approval-card:hover { border-color: var(--type-approval); }
-    .msg-card.status-archived { opacity: 0.45; }
 
-    .msg-header {
+    /* OkiAra — left */
+    .bubble-wrap.from-okiara { align-self: flex-start; align-items: flex-start; }
+    /* FalkVelt — right */
+    .bubble-wrap.from-falkvelt { align-self: flex-end; align-items: flex-end; }
+    /* Eliah — center */
+    .bubble-wrap.from-eliah {
+      align-self: center;
+      align-items: center;
+      max-width: 60%;
+    }
+
+    .bubble {
+      padding: 10px 14px;
+      position: relative;
+    }
+    .bubble-wrap.from-okiara .bubble {
+      background: #4361ee20;
+      border: 1px solid #4361ee40;
+      border-radius: 4px 12px 12px 12px;
+    }
+    .bubble-wrap.from-falkvelt .bubble {
+      background: #2ec4b620;
+      border: 1px solid #2ec4b640;
+      border-radius: 12px 4px 12px 12px;
+    }
+    .bubble-wrap.from-eliah .bubble {
+      background: #c0c0d020;
+      border: 1px solid #c0c0d040;
+      border-radius: 12px;
+    }
+
+    /* Approval highlight */
+    .bubble.approval-bubble {
+      border-left: 3px solid var(--type-approval) !important;
+    }
+
+    .bubble-header {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
+
     .agent-badge {
-      padding: 2px 10px;
+      padding: 2px 8px;
       border-radius: 20px;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       letter-spacing: 0.4px;
       text-transform: uppercase;
     }
-    .agent-okiara   { background: var(--okiara);  color: #fff; }
-    .agent-falkvelt { background: var(--falkvelt); color: #000; }
-    .agent-other    { background: var(--muted);    color: #fff; }
-
-    .arrow { color: var(--muted); font-size: 13px; }
+    .badge-okiara   { background: var(--okiara);  color: #fff; }
+    .badge-falkvelt { background: var(--falkvelt); color: #000; }
+    .badge-eliah    { background: var(--eliah);    color: #1a1a2e; }
+    .badge-other    { background: var(--muted);    color: #fff; }
 
     .type-badge {
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 9px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -167,9 +468,9 @@
     .type-approval     { background: var(--type-approval);     color: #000; }
 
     .prio-badge {
-      padding: 2px 7px;
-      border-radius: 4px;
-      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 9px;
       font-weight: 600;
       letter-spacing: 0.3px;
     }
@@ -177,571 +478,358 @@
     .prio-normal { color: var(--prio-normal); border: 1px solid var(--prio-normal); }
     .prio-low    { color: var(--prio-low);    border: 1px solid var(--prio-low); }
 
-    .msg-subject {
+    .bubble-subject {
       font-weight: 600;
-      font-size: 14px;
-      margin-bottom: 6px;
+      font-size: 13px;
+      margin-bottom: 5px;
       line-height: 1.4;
     }
-    .msg-body {
+
+    .bubble-body {
+      font-family: var(--mono);
+      font-size: 12px;
       color: #b8b8cc;
-      font-size: 13px;
       line-height: 1.6;
       white-space: pre-wrap;
       word-break: break-word;
-      max-height: 120px;
+      max-height: 150px;
       overflow-y: auto;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
-    .msg-body::-webkit-scrollbar { width: 3px; }
-    .msg-body::-webkit-scrollbar-thumb { background: var(--border); }
+    .bubble-body::-webkit-scrollbar { width: 3px; }
+    .bubble-body::-webkit-scrollbar-thumb { background: var(--border); }
 
-    .msg-footer {
+    .bubble-footer {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
     }
-    .msg-meta { color: var(--muted); font-size: 11px; flex: 1; }
-    .status-pill {
-      padding: 2px 8px;
-      border-radius: 20px;
+
+    .bubble-time {
       font-size: 10px;
+      color: var(--muted);
+      flex: 1;
+    }
+
+    .status-pill {
+      padding: 2px 7px;
+      border-radius: 20px;
+      font-size: 9px;
       font-weight: 600;
       text-transform: uppercase;
     }
-    .status-pending   { background: #e9c46a22; color: var(--status-pending); border: 1px solid var(--status-pending); }
-    .status-read      { background: #2ec4b622; color: var(--status-read);    border: 1px solid var(--status-read); }
+    .status-pending   { background: #e9c46a22; color: var(--status-pending);   border: 1px solid var(--status-pending); }
+    .status-read      { background: #2ec4b622; color: var(--status-read);      border: 1px solid var(--status-read); }
     .status-processed { background: #4ade8022; color: var(--status-processed); border: 1px solid var(--status-processed); }
-    .status-archived  { background: #5a5a7a22; color: var(--status-archived); border: 1px solid var(--status-archived); }
-    .status-approved  { background: #4ade8022; color: var(--status-approved); border: 1px solid var(--status-approved); }
-    .status-rejected  { background: #e6394622; color: var(--status-rejected); border: 1px solid var(--status-rejected); }
+    .status-archived  { background: #5a5a7a22; color: var(--status-archived);  border: 1px solid var(--status-archived); }
+    .status-approved  { background: #4ade8022; color: var(--status-approved);  border: 1px solid var(--status-approved); }
+    .status-rejected  { background: #e6394622; color: var(--status-rejected);  border: 1px solid var(--status-rejected); }
+
+    .block-tag {
+      font-size: 10px;
+      color: #7c3aed;
+      font-family: var(--mono);
+      background: #7c3aed22;
+      border: 1px solid #7c3aed44;
+      border-radius: var(--radius-sm);
+      padding: 1px 5px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .block-tag:hover { background: #7c3aed44; }
 
     .action-btn {
       background: transparent;
       border: 1px solid var(--border);
       color: var(--muted);
-      border-radius: 6px;
-      padding: 3px 10px;
-      font-size: 11px;
+      border-radius: var(--radius-sm);
+      padding: 2px 8px;
+      font-size: 10px;
       cursor: pointer;
       transition: all 0.15s;
     }
-    .action-btn:hover {
-      border-color: var(--okiara);
-      color: var(--okiara);
-    }
-    .action-btn.del:hover { border-color: #e6394666; color: #e63946; }
-    .action-btn.approve { border-color: #4ade80; color: #4ade80; }
+    .action-btn:hover { border-color: var(--okiara); color: var(--okiara); }
+    .action-btn.approve { border-color: var(--act-completed); color: var(--act-completed); }
     .action-btn.approve:hover { background: #4ade8022; }
-    .action-btn.reject { border-color: #e63946; color: #e63946; }
+    .action-btn.reject { border-color: var(--act-error); color: var(--act-error); }
     .action-btn.reject:hover { background: #e6394622; }
 
-    .reply-badge {
-      font-size: 10px;
+    .empty-chat {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       color: var(--muted);
-      border: 1px dashed var(--border);
-      border-radius: 4px;
-      padding: 1px 6px;
+      font-size: 13px;
+      flex-direction: column;
+      gap: 8px;
     }
+    .empty-chat-icon { font-size: 32px; opacity: 0.4; }
 
-    /* ---- Send form ---- */
-    #form-col {
-      width: 300px;
+    /* Chat input bar */
+    #chat-input-bar {
+      border-top: 1px solid var(--border);
+      background: var(--card);
+      padding: 10px 16px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
       flex-shrink: 0;
     }
-    #form-card {
-      background: var(--card);
+
+    #chat-input {
+      flex: 1;
+      background: var(--input-bg);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-    }
-    #form-card h2 {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 14px;
+      border-radius: var(--radius-md);
       color: var(--text);
-    }
-    .form-group { margin-bottom: 10px; }
-    .form-group label {
-      display: block;
-      font-size: 11px;
-      color: var(--muted);
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-    }
-    .form-group select,
-    .form-group input,
-    .form-group textarea {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      padding: 7px 10px;
+      padding: 8px 14px;
       font-size: 13px;
-      font-family: inherit;
+      font-family: var(--sans);
       outline: none;
       transition: border-color 0.15s;
     }
-    .form-group select:focus,
-    .form-group input:focus,
-    .form-group textarea:focus { border-color: var(--okiara); }
-    .form-group textarea { resize: vertical; min-height: 80px; }
+    #chat-input:focus { border-color: var(--okiara); }
+    #chat-input::placeholder { color: var(--muted); }
 
-    #send-btn {
-      width: 100%;
+    #chat-send {
       background: var(--okiara);
-      color: #fff;
       border: none;
-      border-radius: 8px;
-      padding: 10px;
-      font-size: 14px;
+      color: #fff;
+      border-radius: var(--radius-md);
+      padding: 8px 18px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      margin-top: 4px;
       transition: background 0.15s;
+      white-space: nowrap;
     }
-    #send-btn:hover { background: #3451d1; }
-    #send-btn:disabled { background: var(--muted); cursor: not-allowed; }
+    #chat-send:hover { background: #3451d1; }
+    #chat-send:disabled { background: var(--muted); cursor: not-allowed; }
 
-    #form-status {
-      margin-top: 8px;
+    /* ========== ACTIVITY PANEL ========== */
+    #activity-panel {
+      width: 340px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-darker);
+    }
+
+    #activity-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    #activity-header h3 {
       font-size: 12px;
-      text-align: center;
-      min-height: 18px;
-    }
-    .success { color: #4ade80; }
-    .error   { color: #e63946; }
-
-    .empty-state {
-      text-align: center;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
       color: var(--muted);
-      padding: 60px 20px;
+      flex: 1;
+    }
+    #activity-count {
+      font-size: 11px;
+      background: var(--surface);
+      color: var(--muted);
+      border-radius: 20px;
+      padding: 1px 7px;
+    }
+
+    #activity-feed {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    #activity-feed::-webkit-scrollbar { width: 4px; }
+    #activity-feed::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
+
+    .act-item {
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 4px;
+      border-left: 3px solid transparent;
+      transition: background 0.15s;
+      position: relative;
+    }
+    .act-item:hover { background: var(--surface-hover); }
+
+    /* Child items */
+    .act-item.child { padding-left: 36px; }
+
+    .act-item.act-thinking   { border-left-color: var(--act-thinking); }
+    .act-item.act-executing  { border-left-color: var(--act-executing); }
+    .act-item.act-delegating { border-left-color: var(--act-delegating); }
+    .act-item.act-waiting    { border-left-color: var(--act-waiting); }
+    .act-item.act-completed  { border-left-color: var(--act-completed); }
+    .act-item.act-error      { border-left-color: var(--act-error); }
+
+    .act-icon {
+      display: inline-block;
+      margin-right: 6px;
       font-size: 13px;
     }
 
-    /* ---- Chain bar ---- */
-    #chain-bar {
-      background: var(--accent);
-      padding: 6px 20px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      font-size: 12px;
-      border-bottom: 1px solid var(--border);
-      color: var(--muted);
-    }
-    .chain-icon { color: #7c3aed; font-weight: 700; }
-    .chain-valid { color: #4ade80; }
-    .chain-invalid { color: #e63946; }
-    .chain-btn {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      border-radius: 4px;
-      padding: 2px 8px;
-      font-size: 11px;
-      cursor: pointer;
-    }
-    .chain-btn:hover { border-color: #7c3aed; color: #7c3aed; }
+    .act-thinking  .act-icon { color: var(--act-thinking); }
+    .act-executing .act-icon { color: var(--act-executing); }
+    .act-delegating .act-icon { color: var(--act-delegating); }
+    .act-waiting   .act-icon { color: var(--act-waiting); }
+    .act-completed .act-icon { color: var(--act-completed); }
+    .act-error     .act-icon { color: var(--act-error); }
 
-    /* ---- Block info on cards ---- */
-    .block-info {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      margin-top: 8px;
-      padding-top: 8px;
-      border-top: 1px dashed var(--border);
+    @keyframes pulse-opacity {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+    .act-thinking .act-icon,
+    .act-waiting  .act-icon  { animation: pulse-opacity 1.6s ease-in-out infinite; }
+
+    .act-text {
+      font-size: 12px;
+      color: var(--text);
+      line-height: 1.4;
+    }
+    .act-meta {
       font-size: 10px;
       color: var(--muted);
-      font-family: 'SF Mono', 'Fira Code', monospace;
+      margin-top: 2px;
     }
-    .block-num {
-      background: #7c3aed;
-      color: #fff;
-      padding: 1px 6px;
-      border-radius: 4px;
-      font-weight: 700;
+
+    .act-empty {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 40px 20px;
     }
-    .hash-val {
-      opacity: 0.7;
-      cursor: pointer;
-    }
-    .hash-val:hover { opacity: 1; color: #c4b5fd; }
+
+    /* ========== SCROLLBAR global ========== */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
   </style>
 </head>
 <body>
 
-<!-- Status bar -->
-<div id="statusbar">
-  <h1>Agent Exchange &mdash; OkiAra &#x2194; FalkVelt</h1>
-  <span class="dot" id="conn-dot"></span>
-  <span id="conn-label">Connected</span>
-  <span id="msg-count">0 messages</span>
-  <span id="refresh-countdown">Refresh in 5s</span>
-</div>
-
-<!-- Chain bar -->
-<div id="chain-bar">
-  <span class="chain-icon">&#x26D3; Chain</span>
-  <span id="chain-blocks">0 blocks</span>
-  <span id="chain-head">HEAD: ---</span>
-  <span id="chain-valid">--</span>
-  <span id="chain-github">GitHub: --</span>
-  <button class="chain-btn" onclick="verifyChain()">Verify</button>
-</div>
-
-<div class="main-wrapper">
-
-  <!-- Feed column -->
-  <div id="feed-col">
-    <div id="feed-header">
-      <h2>Messages</h2>
-      <div class="filter-bar">
-        <select id="filter-to" onchange="applyFilters()">
-          <option value="">All recipients</option>
-          <option value="okiara">To OkiAra</option>
-          <option value="falkvelt">To FalkVelt</option>
-        </select>
-        <select id="filter-status" onchange="applyFilters()">
-          <option value="">All statuses</option>
-          <option value="pending">Pending</option>
-          <option value="read">Read</option>
-          <option value="processed">Processed</option>
-          <option value="archived">Archived</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-        </select>
-        <select id="filter-type" onchange="applyFilters()">
-          <option value="">All types</option>
-          <option value="task">Task</option>
-          <option value="response">Response</option>
-          <option value="notification">Notification</option>
-          <option value="config">Config</option>
-          <option value="approval">Approval</option>
-        </select>
-      </div>
+<!-- ========== TOP BAR ========== -->
+<header id="topbar">
+  <div class="topbar-left">
+    <div class="agent-id">
+      <span class="presence-dot offline" id="dot-okiara"></span>
+      OkiAra <span class="version">v1.32</span>
     </div>
-    <div id="feed"></div>
+    <div class="agent-id">
+      <span class="presence-dot offline" id="dot-falkvelt"></span>
+      FalkVelt <span class="version">v1.01</span>
+    </div>
   </div>
 
-  <!-- Send form -->
-  <div id="form-col">
-    <div id="form-card">
-      <h2>Send Message</h2>
-      <div class="form-group">
-        <label>From</label>
-        <select id="f-from">
-          <option value="okiara">OkiAra</option>
-          <option value="falkvelt">FalkVelt</option>
-        </select>
+  <div class="topbar-center">
+    <span class="metric"><b id="m-msgs">0</b> msgs</span>
+    <span class="metric"><b id="m-pending">0</b> pending</span>
+    <span class="metric"><b id="m-blocks">0</b> blocks</span>
+    <span class="metric" id="m-chain">chain ✓</span>
+  </div>
+
+  <div class="topbar-right">
+    <div class="notif-bell" id="notif-bell" onclick="toggleNotifPanel(event)">
+      🔔 <span class="notif-badge" id="notif-count" style="display:none">0</span>
+    </div>
+    <button class="topbar-btn" id="approve-mode-btn" onclick="toggleApprovePanel(event)">Approve Mode &#9881;</button>
+
+    <!-- Notification dropdown -->
+    <div class="dropdown-panel hidden" id="notif-panel">
+      <div class="dropdown-title">Pending Messages</div>
+      <div id="notif-list"><div style="color:var(--muted);font-size:12px;">No pending messages</div></div>
+    </div>
+
+    <!-- Approve mode dropdown -->
+    <div class="dropdown-panel hidden" id="approve-panel">
+      <div class="dropdown-title">Approve Mode</div>
+      <div class="approve-row">
+        <span class="approve-label">OkiAra</span>
+        <span class="approve-timer" id="timer-okiara"></span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-okiara" onchange="toggleApprove('okiara')">
+          <span class="toggle-slider"></span>
+        </label>
       </div>
-      <div class="form-group">
-        <label>To</label>
-        <select id="f-to">
-          <option value="falkvelt">FalkVelt</option>
-          <option value="okiara">OkiAra</option>
-        </select>
+      <div class="approve-row">
+        <span class="approve-label">FalkVelt</span>
+        <span class="approve-timer" id="timer-falkvelt"></span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-falkvelt" onchange="toggleApprove('falkvelt')">
+          <span class="toggle-slider"></span>
+        </label>
       </div>
-      <div class="form-group">
-        <label>Type</label>
-        <select id="f-type">
-          <option value="notification">Notification</option>
-          <option value="task">Task</option>
-          <option value="response">Response</option>
-          <option value="config">Config</option>
-          <option value="approval">Approval</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Priority</label>
-        <select id="f-priority">
-          <option value="normal">Normal</option>
-          <option value="high">High</option>
-          <option value="low">Low</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Subject</label>
-        <input id="f-subject" type="text" maxlength="200" placeholder="Message subject..." />
-      </div>
-      <div class="form-group">
-        <label>Body</label>
-        <textarea id="f-body" maxlength="10000" placeholder="Message body..."></textarea>
-      </div>
-      <button id="send-btn" onclick="sendMessage()">Send</button>
-      <div id="form-status"></div>
+      <select class="approve-duration" id="approve-duration">
+        <option value="1800">30 min</option>
+        <option value="3600" selected>1 hour</option>
+        <option value="session">Session</option>
+      </select>
+      <button class="auto-respond-btn" onclick="autoRespond()">Auto-respond (all, 1h)</button>
+    </div>
+  </div>
+</header>
+
+<!-- ========== DECISION BAR ========== -->
+<div id="decision-bar" class="hidden">
+  <span class="decision-icon">&#9888;</span>
+  <span id="decision-text">Требуется выбор</span>
+  <div id="decision-actions"></div>
+  <button class="decision-btn auto" onclick="autoRespond()">Auto-respond</button>
+</div>
+
+<!-- ========== MAIN ========== -->
+<div class="main-wrapper">
+
+  <!-- Chat Panel -->
+  <div id="chat-panel">
+    <div id="chat-messages"></div>
+    <div id="chat-input-bar">
+      <input
+        type="text"
+        id="chat-input"
+        placeholder="Сообщение..."
+        maxlength="2000"
+        onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); sendUserMessage(); }"
+      />
+      <button id="chat-send" onclick="sendUserMessage()">&#128228; Отправить</button>
+    </div>
+  </div>
+
+  <!-- Activity Panel -->
+  <div id="activity-panel">
+    <div id="activity-header">
+      <h3>Live Activity</h3>
+      <span id="activity-count">0</span>
+    </div>
+    <div id="activity-feed">
+      <div class="act-empty">No activity yet</div>
     </div>
   </div>
 
 </div>
 
 <script>
-  // ---- State ----
-  let messages = [];
-  let countdown = 5;
-  let countdownTimer = null;
+  // ========== STATE ==========
+  const state = {
+    messages:    [],
+    activities:  [],
+    presence:    {},
+    approveMode: { okiara: null, falkvelt: null },   // null = off, Date = expiry
+    chainStatus: {}
+  };
 
-  // ---- Filters ----
-  function getFilters() {
-    return {
-      to:     document.getElementById('filter-to').value,
-      status: document.getElementById('filter-status').value,
-      type:   document.getElementById('filter-type').value,
-    };
-  }
+  let msgSSE = null;
+  let actSSE = null;
 
-  function applyFilters() {
-    renderFeed(messages);
-  }
-
-  // ---- Fetch messages ----
-  async function fetchMessages() {
-    const params = new URLSearchParams({ limit: 200 });
-    const f = getFilters();
-    if (f.to)     params.set('to', f.to);
-    if (f.status) params.set('status', f.status);
-    if (f.type)   params.set('type', f.type);
-
-    try {
-      const res = await fetch('/messages?' + params.toString());
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      messages = await res.json();
-      setConnected(true);
-      renderFeed(messages);
-      document.getElementById('msg-count').textContent = messages.length + ' message' + (messages.length !== 1 ? 's' : '');
-    } catch (e) {
-      setConnected(false);
-      console.error('Fetch failed:', e);
-    }
-  }
-
-  function setConnected(ok) {
-    const dot   = document.getElementById('conn-dot');
-    const label = document.getElementById('conn-label');
-    if (ok) {
-      dot.classList.remove('offline');
-      label.textContent = 'Connected';
-    } else {
-      dot.classList.add('offline');
-      label.textContent = 'Offline';
-    }
-  }
-
-  // ---- Render ----
-  function agentBadge(name) {
-    const lower = (name || '').toLowerCase();
-    let cls = 'agent-other';
-    if (lower === 'okiara')   cls = 'agent-okiara';
-    if (lower === 'falkvelt') cls = 'agent-falkvelt';
-    return `<span class="agent-badge ${cls}">${escHtml(name)}</span>`;
-  }
-
-  function typeBadge(type) {
-    return `<span class="type-badge type-${escAttr(type)}">${escHtml(type)}</span>`;
-  }
-
-  function prioBadge(prio) {
-    return `<span class="prio-badge prio-${escAttr(prio)}">${escHtml(prio)}</span>`;
-  }
-
-  function statusPill(status) {
-    return `<span class="status-pill status-${escAttr(status)}">${escHtml(status)}</span>`;
-  }
-
-  function formatDate(iso) {
-    if (!iso) return '';
-    try {
-      return new Date(iso).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
-    } catch { return iso; }
-  }
-
-  function renderFeed(msgs) {
-    const feed = document.getElementById('feed');
-    if (!msgs.length) {
-      feed.innerHTML = '<div class="empty-state">No messages yet. Send one!</div>';
-      return;
-    }
-
-    feed.innerHTML = msgs.map(m => {
-      const replyBadge = m.in_reply_to
-        ? `<span class="reply-badge" title="${escAttr(m.in_reply_to)}">reply</span>`
-        : '';
-
-      let actionButtons = '';
-      if (m.type === 'approval' && m.status === 'pending') {
-        actionButtons = `
-          <button class="action-btn approve" onclick="markStatus('${escAttr(m.id)}', 'approved')">Одобрить</button>
-          <button class="action-btn reject" onclick="markStatus('${escAttr(m.id)}', 'rejected')">Отклонить</button>
-        `;
-      } else {
-        const readBtn = (m.status === 'pending')
-          ? `<button class="action-btn" onclick="markStatus('${escAttr(m.id)}', 'read')">Mark read</button>`
-          : '';
-        const processBtn = (m.status === 'read')
-          ? `<button class="action-btn" onclick="markStatus('${escAttr(m.id)}', 'processed')">Mark processed</button>`
-          : '';
-        const archiveBtn = (m.status !== 'archived')
-          ? `<button class="action-btn del" onclick="archiveMsg('${escAttr(m.id)}')">Archive</button>`
-          : '';
-        actionButtons = readBtn + processBtn + archiveBtn;
-      }
-
-      const readAtLine = m.read_at
-        ? `<span style="color:var(--muted);font-size:11px;"> &middot; Read ${formatDate(m.read_at)}</span>`
-        : '';
-
-      return `
-        <div class="msg-card status-${escAttr(m.status)}${m.type === 'approval' ? ' approval-card' : ''}" id="card-${escAttr(m.id)}">
-          <div class="msg-header">
-            ${agentBadge(m.from_agent)}
-            <span class="arrow">&#x2192;</span>
-            ${agentBadge(m.to_agent)}
-            ${typeBadge(m.type)}
-            ${prioBadge(m.priority)}
-            ${replyBadge}
-          </div>
-          <div class="msg-subject">${escHtml(m.subject)}</div>
-          ${m.body ? `<div class="msg-body">${escHtml(m.body)}</div>` : ''}
-          <div class="msg-footer">
-            <span class="msg-meta">${formatDate(m.created_at)}${readAtLine}</span>
-            ${statusPill(m.status)}
-            ${actionButtons}
-          </div>
-          ${m.block_number ? `
-          <div class="block-info">
-            <span class="block-num">#${m.block_number}</span>
-            <span class="hash-val" title="${escAttr(m.block_hash || '')}" onclick="navigator.clipboard.writeText('${escAttr(m.block_hash || '')}')">
-              ${m.block_hash ? m.block_hash.substring(0, 12) + '...' : '---'}
-            </span>
-            <span style="opacity:0.4;">prev:</span>
-            <span class="hash-val" title="${escAttr(m.prev_hash || '')}">
-              ${m.prev_hash ? m.prev_hash.substring(0, 8) + '...' : '---'}
-            </span>
-          </div>` : ''}
-        </div>`;
-    }).join('');
-  }
-
-  // ---- Actions ----
-  async function markStatus(id, status) {
-    try {
-      const res = await fetch(`/messages/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      await fetchMessages();
-    } catch (e) {
-      console.error('markStatus failed:', e);
-    }
-  }
-
-  async function archiveMsg(id) {
-    try {
-      const res = await fetch(`/messages/${id}`, { method: 'DELETE' });
-      if (!res.ok && res.status !== 204) throw new Error('HTTP ' + res.status);
-      await fetchMessages();
-    } catch (e) {
-      console.error('archive failed:', e);
-    }
-  }
-
-  async function sendMessage() {
-    const btn    = document.getElementById('send-btn');
-    const status = document.getElementById('form-status');
-    const subject = document.getElementById('f-subject').value.trim();
-
-    if (!subject) {
-      status.innerHTML = '<span class="error">Subject is required.</span>';
-      return;
-    }
-
-    btn.disabled = true;
-    status.textContent = 'Sending...';
-
-    const payload = {
-      from_agent: document.getElementById('f-from').value,
-      to_agent:   document.getElementById('f-to').value,
-      type:       document.getElementById('f-type').value,
-      priority:   document.getElementById('f-priority').value,
-      subject:    subject,
-      body:       document.getElementById('f-body').value.trim(),
-    };
-
-    try {
-      const res = await fetch('/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || 'HTTP ' + res.status);
-      }
-      status.innerHTML = '<span class="success">Sent!</span>';
-      document.getElementById('f-subject').value = '';
-      document.getElementById('f-body').value = '';
-      await fetchMessages();
-    } catch (e) {
-      status.innerHTML = `<span class="error">${escHtml(String(e.message))}</span>`;
-    } finally {
-      btn.disabled = false;
-      setTimeout(() => { status.textContent = ''; }, 3000);
-    }
-  }
-
-  // ---- Chain ----
-  async function fetchChainStatus() {
-    try {
-      const res = await fetch('/chain/status');
-      if (!res.ok) return;
-      const d = await res.json();
-      document.getElementById('chain-blocks').textContent = d.last_block_number + ' blocks';
-      document.getElementById('chain-head').textContent = 'HEAD: ' + d.last_block_hash;
-      document.getElementById('chain-github').textContent = d.github_synced
-        ? 'GitHub: ' + d.github_file_sha
-        : 'GitHub: not synced';
-    } catch (e) { console.error('chain status:', e); }
-  }
-
-  async function verifyChain() {
-    const el = document.getElementById('chain-valid');
-    el.textContent = 'Verifying...';
-    el.className = '';
-    try {
-      const res = await fetch('/chain/verify');
-      const d = await res.json();
-      if (d.valid) {
-        el.className = 'chain-valid';
-        el.textContent = 'Valid (' + d.blocks + ' blocks)';
-      } else {
-        el.className = 'chain-invalid';
-        el.textContent = 'INVALID: ' + d.errors.length + ' errors';
-        console.error('Chain errors:', d.errors);
-      }
-    } catch (e) { el.textContent = 'Error'; }
-  }
-
-  // ---- Auto-refresh ----
-  function startCountdown() {
-    clearInterval(countdownTimer);
-    countdown = 5;
-    countdownTimer = setInterval(() => {
-      countdown--;
-      document.getElementById('refresh-countdown').textContent = `Refresh in ${countdown}s`;
-      if (countdown <= 0) {
-        clearInterval(countdownTimer);
-        Promise.all([fetchMessages(), fetchChainStatus()]).then(startCountdown);
-      }
-    }, 1000);
-  }
-
-  // ---- Helpers ----
+  // ========== XSS PREVENTION ==========
   function escHtml(str) {
     return String(str)
       .replace(/&/g, '&amp;')
@@ -752,8 +840,504 @@
   }
   function escAttr(str) { return escHtml(str); }
 
-  // ---- Init ----
-  Promise.all([fetchMessages(), fetchChainStatus()]).then(startCountdown);
+  // ========== SSE ==========
+  function connectSSE() {
+    // Messages SSE
+    if (msgSSE) { try { msgSSE.close(); } catch(e) {} }
+    msgSSE = new EventSource('/stream/messages');
+    msgSSE.onmessage = e => {
+      try {
+        const msg = JSON.parse(e.data);
+        // Replace or prepend
+        const idx = state.messages.findIndex(m => m.id === msg.id);
+        if (idx >= 0) state.messages[idx] = msg;
+        else state.messages.unshift(msg);
+        renderChat();
+        updateMetrics();
+        renderDecisionBar();
+        renderNotifPanel();
+      } catch(err) { console.error('SSE message parse:', err); }
+    };
+    msgSSE.onerror = () => setTimeout(connectSSE, 3000);
+
+    // Activities SSE
+    if (actSSE) { try { actSSE.close(); } catch(e) {} }
+    actSSE = new EventSource('/stream/activities');
+    actSSE.onmessage = e => {
+      try {
+        const act = JSON.parse(e.data);
+        const idx = state.activities.findIndex(a => a.id === act.id);
+        if (idx >= 0) state.activities[idx] = act;
+        else state.activities.unshift(act);
+        // Keep max 100
+        if (state.activities.length > 100) state.activities = state.activities.slice(0, 100);
+        renderActivityFeed();
+      } catch(err) { console.error('SSE activity parse:', err); }
+    };
+    actSSE.onerror = () => setTimeout(connectSSE, 3000);
+  }
+
+  // ========== FETCH ==========
+  async function fetchActivities() {
+    try {
+      const res = await fetch('/activities?limit=50');
+      if (!res.ok) return;
+      state.activities = await res.json();
+    } catch(e) { console.error('fetchActivities:', e); }
+  }
+
+  async function fetchMessages() {
+    try {
+      const res = await fetch('/messages?limit=200');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      state.messages = await res.json();
+    } catch(e) { console.error('fetchMessages:', e); }
+  }
+
+  async function fetchChainStatus() {
+    try {
+      const res = await fetch('/chain/status');
+      if (!res.ok) return;
+      state.chainStatus = await res.json();
+      const d = state.chainStatus;
+      const el = document.getElementById('m-blocks');
+      if (el) el.textContent = d.last_block_number ?? '0';
+      const chain = document.getElementById('m-chain');
+      if (chain) {
+        chain.textContent = 'chain \u2713';
+        chain.classList.remove('invalid');
+      }
+    } catch(e) { console.error('fetchChainStatus:', e); }
+  }
+
+  async function fetchPresence() {
+    try {
+      const res = await fetch('/presence');
+      if (!res.ok) return;
+      const data = await res.json();
+      state.presence = data;
+      updatePresenceDots(data);
+    } catch(e) {
+      // Presence endpoint may not exist yet — silently ignore
+    }
+  }
+
+  async function fetchApproveMode() {
+    try {
+      const res = await fetch('/settings/approve-mode');
+      if (!res.ok) return;
+      const data = await res.json();
+      // data expected: { okiara: ISO or null, falkvelt: ISO or null }
+      for (const agent of ['okiara', 'falkvelt']) {
+        state.approveMode[agent] = data[agent] ? new Date(data[agent]) : null;
+        const toggle = document.getElementById('toggle-' + agent);
+        if (toggle) toggle.checked = !!state.approveMode[agent];
+      }
+    } catch(e) {
+      // Endpoint may not exist yet
+    }
+  }
+
+  // ========== PRESENCE ==========
+  function updatePresenceDots(data) {
+    for (const agent of ['okiara', 'falkvelt']) {
+      const dot = document.getElementById('dot-' + agent);
+      if (!dot) continue;
+      const info = data[agent];
+      const status = (typeof info === 'object' ? info?.state : info) || 'offline';
+      dot.className = 'presence-dot ' + status.toLowerCase();
+      // Dynamic version update from presence data
+      const verSpan = dot.parentElement?.querySelector('.version');
+      if (verSpan && typeof info === 'object' && info?.version) {
+        verSpan.textContent = 'v' + info.version;
+      }
+    }
+  }
+
+  // ========== RENDER CHAT ==========
+  function renderChat() {
+    const container = document.getElementById('chat-messages');
+    if (!state.messages.length) {
+      container.innerHTML = '<div class="empty-chat"><span class="empty-chat-icon">&#128172;</span><span>Сообщений пока нет</span></div>';
+      return;
+    }
+
+    // Show newest at bottom — sort ascending by created_at
+    const sorted = [...state.messages].sort((a, b) => {
+      return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+    });
+
+    container.innerHTML = sorted.map(m => buildBubble(m)).join('');
+
+    // Auto-scroll to bottom
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function buildBubble(m) {
+    const from = (m.from_agent || '').toLowerCase();
+    let wrapClass = 'bubble-wrap';
+    if (from === 'okiara')   wrapClass += ' from-okiara';
+    else if (from === 'falkvelt') wrapClass += ' from-falkvelt';
+    else if (from === 'eliah')    wrapClass += ' from-eliah';
+    else                          wrapClass += ' from-eliah';
+
+    const isApproval = m.type === 'approval';
+    const bubbleClass = 'bubble' + (isApproval ? ' approval-bubble' : '');
+
+    // Agent badge
+    let badgeCls = 'badge-other';
+    if (from === 'okiara')   badgeCls = 'badge-okiara';
+    else if (from === 'falkvelt') badgeCls = 'badge-falkvelt';
+    else if (from === 'eliah')    badgeCls = 'badge-eliah';
+
+    const typeCls  = 'type-' + escAttr(m.type || 'notification');
+    const prioCls  = 'prio-' + escAttr(m.priority || 'normal');
+
+    // Action buttons
+    let actionBtns = '';
+    if (isApproval && m.status === 'pending') {
+      actionBtns = `
+        <button class="action-btn approve" onclick="markStatus('${escAttr(m.id)}','approved')">&#10003; Одобрить</button>
+        <button class="action-btn reject"  onclick="markStatus('${escAttr(m.id)}','rejected')">&#10007; Отклонить</button>`;
+    } else if (m.status === 'pending') {
+      actionBtns = `<button class="action-btn" onclick="markStatus('${escAttr(m.id)}','read')">Прочитано</button>`;
+    }
+
+    // Block tag
+    const blockTag = m.block_number
+      ? `<span class="block-tag" title="${escAttr(m.block_hash || '')}" onclick="navigator.clipboard.writeText('${escAttr(m.block_hash || '')}')">&#x26D3; #${escHtml(String(m.block_number))}</span>`
+      : '';
+
+    return `
+      <div class="${wrapClass}" id="wrap-${escAttr(m.id)}">
+        <div class="${bubbleClass}">
+          <div class="bubble-header">
+            <span class="agent-badge ${badgeCls}">${escHtml(m.from_agent || '?')}</span>
+            <span class="type-badge ${typeCls}">${escHtml(m.type || '')}</span>
+            <span class="prio-badge ${prioCls}">${escHtml(m.priority || 'normal')}</span>
+          </div>
+          <div class="bubble-subject">${escHtml(m.subject || '(no subject)')}</div>
+          ${m.body ? `<div class="bubble-body">${escHtml(m.body)}</div>` : ''}
+          <div class="bubble-footer">
+            <span class="bubble-time">${formatDate(m.created_at)}</span>
+            <span class="status-pill status-${escAttr(m.status || 'pending')}">${escHtml(m.status || 'pending')}</span>
+            ${blockTag}
+            ${actionBtns}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ========== RENDER ACTIVITY FEED ==========
+  const ACT_ICONS = {
+    thinking:   '&#128302;',
+    executing:  '&#9889;',
+    delegating: '&#128228;',
+    waiting:    '&#8987;',
+    completed:  '&#10003;',
+    error:      '&#10005;'
+  };
+
+  function renderActivityFeed() {
+    const feed = document.getElementById('activity-feed');
+    const count = document.getElementById('activity-count');
+
+    if (!state.activities.length) {
+      feed.innerHTML = '<div class="act-empty">No activity yet</div>';
+      if (count) count.textContent = '0';
+      return;
+    }
+
+    if (count) count.textContent = String(state.activities.length);
+
+    // Newest at top — already unshifted
+    feed.innerHTML = state.activities.map(a => {
+      const type = (a.type || 'executing').toLowerCase();
+      const icon = ACT_ICONS[type] || '&#9679;';
+      const isChild = !!a.parent_id;
+      const cls = 'act-item act-' + escAttr(type) + (isChild ? ' child' : '');
+      return `
+        <div class="${cls}">
+          <span class="act-icon">${icon}</span><span class="act-text">${escHtml(a.detail || a.text || a.message || type)}</span>
+          ${a.agent ? `<div class="act-meta">${escHtml(a.agent)} &middot; ${formatDate(a.timestamp || a.created_at)}</div>` : ''}
+        </div>`;
+    }).join('');
+  }
+
+  // ========== DECISION BAR ==========
+  function renderDecisionBar() {
+    const bar      = document.getElementById('decision-bar');
+    const actionsEl = document.getElementById('decision-actions');
+    const textEl    = document.getElementById('decision-text');
+
+    const pending = state.messages.filter(m => m.type === 'approval' && m.status === 'pending');
+
+    if (!pending.length) {
+      bar.classList.add('hidden');
+      return;
+    }
+
+    bar.classList.remove('hidden');
+    const first = pending[0];
+    textEl.textContent = `Требуется выбор: "${escHtml(first.subject || 'approval')}" (+${pending.length - 1 > 0 ? pending.length - 1 + ' more' : ''})`;
+
+    actionsEl.innerHTML = `
+      <button class="decision-btn approve-btn" onclick="markStatus('${escAttr(first.id)}','approved')">Одобрить</button>
+      <button class="decision-btn reject-btn"  onclick="markStatus('${escAttr(first.id)}','rejected')">Отклонить</button>`;
+  }
+
+  // ========== METRICS ==========
+  function updateMetrics() {
+    const total   = state.messages.length;
+    const pending = state.messages.filter(m => m.status === 'pending').length;
+
+    const elMsgs    = document.getElementById('m-msgs');
+    const elPending = document.getElementById('m-pending');
+    if (elMsgs)    elMsgs.textContent    = String(total);
+    if (elPending) elPending.textContent = String(pending);
+
+    // Notification badge
+    const badge = document.getElementById('notif-count');
+    if (badge) {
+      badge.textContent = String(pending);
+      badge.style.display = pending > 0 ? 'block' : 'none';
+    }
+  }
+
+  // ========== NOTIFICATION PANEL ==========
+  function renderNotifPanel() {
+    const list = document.getElementById('notif-list');
+    if (!list) return;
+    const pending = state.messages.filter(m => m.status === 'pending').slice(0, 10);
+    if (!pending.length) {
+      list.innerHTML = '<div style="color:var(--muted);font-size:12px;">No pending messages</div>';
+      return;
+    }
+    list.innerHTML = pending.map(m => `
+      <div class="notif-item type-${escAttr(m.type)}" onclick="scrollToMessage('${escAttr(m.id)}'); closeDropdowns();">
+        <div class="notif-item-from">${escHtml(m.from_agent || '?')} &#8594; ${escHtml(m.to_agent || '?')}</div>
+        <div class="notif-item-subj">${escHtml(m.subject || '(no subject)')}</div>
+      </div>`).join('');
+  }
+
+  function scrollToMessage(id) {
+    const el = document.getElementById('wrap-' + id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // ========== DROPDOWN PANELS ==========
+  function toggleNotifPanel(e) {
+    e && e.stopPropagation();
+    const panel = document.getElementById('notif-panel');
+    const approvePanel = document.getElementById('approve-panel');
+    approvePanel.classList.add('hidden');
+    panel.classList.toggle('hidden');
+    if (!panel.classList.contains('hidden')) renderNotifPanel();
+  }
+
+  function toggleApprovePanel(e) {
+    e && e.stopPropagation();
+    const panel = document.getElementById('approve-panel');
+    const notifPanel = document.getElementById('notif-panel');
+    notifPanel.classList.add('hidden');
+    panel.classList.toggle('hidden');
+    const btn = document.getElementById('approve-mode-btn');
+    btn.classList.toggle('active', !panel.classList.contains('hidden'));
+  }
+
+  function closeDropdowns() {
+    document.getElementById('notif-panel').classList.add('hidden');
+    document.getElementById('approve-panel').classList.add('hidden');
+    document.getElementById('approve-mode-btn').classList.remove('active');
+  }
+
+  // Close on outside click
+  document.addEventListener('click', e => {
+    const notifBell   = document.getElementById('notif-bell');
+    const notifPanel  = document.getElementById('notif-panel');
+    const approveBtn  = document.getElementById('approve-mode-btn');
+    const approvePanel = document.getElementById('approve-panel');
+    if (!notifBell.contains(e.target) && !notifPanel.contains(e.target) &&
+        !approveBtn.contains(e.target) && !approvePanel.contains(e.target)) {
+      closeDropdowns();
+    }
+  });
+
+  // ========== APPROVE MODE ==========
+  async function toggleApprove(agent) {
+    const checkbox = document.getElementById('toggle-' + agent);
+    const enabled  = checkbox.checked;
+    const durationEl = document.getElementById('approve-duration');
+    const duration = durationEl ? durationEl.value : '3600';
+
+    let expiry = null;
+    if (enabled && duration !== 'session') {
+      expiry = new Date(Date.now() + parseInt(duration, 10) * 1000).toISOString();
+    } else if (enabled) {
+      expiry = 'session';
+    }
+
+    state.approveMode[agent] = enabled && expiry !== 'session' ? new Date(expiry) : (enabled ? 'session' : null);
+
+    try {
+      await fetch('/settings/approve-mode', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent, enabled, expiry })
+      });
+    } catch(e) { console.error('toggleApprove:', e); }
+  }
+
+  async function autoRespond() {
+    // Enable approve mode for all agents for 1 hour
+    const expiry = new Date(Date.now() + 3600000).toISOString();
+    for (const agent of ['okiara', 'falkvelt']) {
+      state.approveMode[agent] = new Date(expiry);
+      const toggle = document.getElementById('toggle-' + agent);
+      if (toggle) toggle.checked = true;
+    }
+    try {
+      await fetch('/settings/approve-mode', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent: 'all', enabled: true, expiry })
+      });
+    } catch(e) { console.error('autoRespond:', e); }
+    closeDropdowns();
+  }
+
+  function updateApproveTimers() {
+    for (const agent of ['okiara', 'falkvelt']) {
+      const el = document.getElementById('timer-' + agent);
+      if (!el) continue;
+      const expiry = state.approveMode[agent];
+      if (!expiry) { el.textContent = ''; continue; }
+      if (expiry === 'session') { el.textContent = 'session'; continue; }
+      const remaining = expiry - Date.now();
+      if (remaining <= 0) {
+        state.approveMode[agent] = null;
+        const toggle = document.getElementById('toggle-' + agent);
+        if (toggle) toggle.checked = false;
+        el.textContent = '';
+      } else {
+        const mins = Math.floor(remaining / 60000);
+        const secs = Math.floor((remaining % 60000) / 1000);
+        el.textContent = mins + ':' + String(secs).padStart(2, '0');
+      }
+    }
+  }
+
+  // ========== MARK STATUS ==========
+  async function markStatus(id, status) {
+    try {
+      const res = await fetch('/messages/' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      // Update local state
+      const idx = state.messages.findIndex(m => m.id === id);
+      if (idx >= 0) state.messages[idx].status = status;
+      renderChat();
+      updateMetrics();
+      renderDecisionBar();
+      renderNotifPanel();
+    } catch(e) { console.error('markStatus:', e); }
+  }
+
+  // ========== SEND USER MESSAGE ==========
+  async function sendUserMessage() {
+    const input = document.getElementById('chat-input');
+    const btn   = document.getElementById('chat-send');
+    const text  = (input.value || '').trim();
+    if (!text) return;
+
+    btn.disabled = true;
+    input.disabled = true;
+
+    const payload = {
+      from_agent: 'eliah',
+      to_agent:   'okiara',
+      type:       'task',
+      priority:   'normal',
+      subject:    text.length > 80 ? text.substring(0, 77) + '...' : text,
+      body:       text
+    };
+
+    try {
+      const res = await fetch('/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const newMsg = await res.json();
+      const exists = state.messages.some(m => m.id === newMsg.id);
+      if (!exists) state.messages.unshift(newMsg);
+      input.value = '';
+      renderChat();
+      updateMetrics();
+    } catch(e) {
+      console.error('sendUserMessage:', e);
+    } finally {
+      btn.disabled = false;
+      input.disabled = false;
+      input.focus();
+    }
+  }
+
+  // ========== CHAIN VERIFY ==========
+  async function verifyChain() {
+    const chain = document.getElementById('m-chain');
+    if (chain) chain.textContent = 'chain ...';
+    try {
+      const res = await fetch('/chain/verify');
+      const d = await res.json();
+      if (chain) {
+        if (d.valid) {
+          chain.textContent = 'chain \u2713';
+          chain.classList.remove('invalid');
+        } else {
+          chain.textContent = 'chain \u2717';
+          chain.classList.add('invalid');
+        }
+      }
+    } catch(e) {
+      if (chain) chain.textContent = 'chain ?';
+    }
+  }
+
+  // ========== HELPERS ==========
+  function formatDate(iso) {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+    } catch { return String(iso); }
+  }
+
+  // ========== INIT ==========
+  async function init() {
+    await Promise.all([
+      fetchMessages(),
+      fetchActivities(),
+      fetchChainStatus(),
+      fetchPresence(),
+      fetchApproveMode()
+    ]);
+    renderChat();
+    renderActivityFeed();
+    renderDecisionBar();
+    updateMetrics();
+    renderNotifPanel();
+    connectSSE();
+
+    setInterval(fetchPresence,      30000);
+    setInterval(fetchChainStatus,   60000);
+    setInterval(updateApproveTimers, 1000);
+  }
+
+  init();
 </script>
 </body>
 </html>
