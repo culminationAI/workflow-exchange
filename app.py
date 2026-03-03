@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS messages (
 """
 
 VALID_AGENT_RE = re.compile(r"^[a-zA-Z0-9_]{1,50}$")
-VALID_TYPES = {"task", "response", "notification", "config", "approval"}
+VALID_TYPES = {"task", "response", "notification", "config", "approval", "knowledge"}
 VALID_PRIORITIES = {"low", "normal", "high"}
 VALID_STATUSES = {"pending", "read", "processed", "archived", "approved", "rejected"}
 
