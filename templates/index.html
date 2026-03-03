@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Exchange — OkiAra ↔ FalkVelt</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #1a1a2e;
+      --card:      #16213e;
+      --accent:    #0f3460;
+      --text:      #e0e0e0;
+      --muted:     #8888aa;
+      --border:    #243060;
+
+      --okiara:    #4361ee;
+      --falkvelt:  #2ec4b6;
+
+      --type-task:         #e63946;
+      --type-response:     #4361ee;
+      --type-notification: #5a5a7a;
+      --type-config:       #e9c46a;
+
+      --prio-high:   #e63946;
+      --prio-normal: #4cc9f0;
+      --prio-low:    #5a5a7a;
+
+      --status-pending:   #e9c46a;
+      --status-read:      #2ec4b6;
+      --status-processed: #4ade80;
+      --status-archived:  #5a5a7a;
+
+      --type-approval:    #f59e0b;
+      --status-approved:  #4ade80;
+      --status-rejected:  #e63946;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Status bar ---- */
+    #statusbar {
+      background: var(--accent);
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+    }
+    #statusbar h1 {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      flex: 1;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #4ade80;
+      display: inline-block;
+      box-shadow: 0 0 6px #4ade80;
+    }
+    .dot.offline { background: #e63946; box-shadow: 0 0 6px #e63946; }
+    #msg-count { color: var(--muted); }
+    #refresh-countdown { color: var(--muted); font-size: 12px; }
+
+    /* ---- Layout ---- */
+    .main-wrapper {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      padding: 16px;
+      gap: 16px;
+    }
+
+    /* ---- Feed ---- */
+    #feed-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #feed-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    #feed-header h2 { font-size: 14px; font-weight: 600; }
+    .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+    .filter-bar select {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    #feed {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 4px;
+    }
+    #feed::-webkit-scrollbar { width: 5px; }
+    #feed::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
+
+    /* ---- Message card ---- */
+    .msg-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      transition: border-color 0.2s;
+    }
+    .msg-card:hover { border-color: #4361ee66; }
+    .msg-card.approval-card { border-left: 3px solid var(--type-approval); }
+    .msg-card.approval-card:hover { border-color: var(--type-approval); }
+    .msg-card.status-archived { opacity: 0.45; }
+
+    .msg-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .agent-badge {
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+    .agent-okiara   { background: var(--okiara);  color: #fff; }
+    .agent-falkvelt { background: var(--falkvelt); color: #000; }
+    .agent-other    { background: var(--muted);    color: #fff; }
+
+    .arrow { color: var(--muted); font-size: 13px; }
+
+    .type-badge {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .type-task         { background: var(--type-task);         color: #fff; }
+    .type-response     { background: var(--type-response);     color: #fff; }
+    .type-notification { background: var(--type-notification); color: #ccc; }
+    .type-config       { background: var(--type-config);       color: #000; }
+    .type-approval     { background: var(--type-approval);     color: #000; }
+
+    .prio-badge {
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+    .prio-high   { color: var(--prio-high);   border: 1px solid var(--prio-high); }
+    .prio-normal { color: var(--prio-normal); border: 1px solid var(--prio-normal); }
+    .prio-low    { color: var(--prio-low);    border: 1px solid var(--prio-low); }
+
+    .msg-subject {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+    .msg-body {
+      color: #b8b8cc;
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 120px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+    }
+    .msg-body::-webkit-scrollbar { width: 3px; }
+    .msg-body::-webkit-scrollbar-thumb { background: var(--border); }
+
+    .msg-footer {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .msg-meta { color: var(--muted); font-size: 11px; flex: 1; }
+    .status-pill {
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .status-pending   { background: #e9c46a22; color: var(--status-pending); border: 1px solid var(--status-pending); }
+    .status-read      { background: #2ec4b622; color: var(--status-read);    border: 1px solid var(--status-read); }
+    .status-processed { background: #4ade8022; color: var(--status-processed); border: 1px solid var(--status-processed); }
+    .status-archived  { background: #5a5a7a22; color: var(--status-archived); border: 1px solid var(--status-archived); }
+    .status-approved  { background: #4ade8022; color: var(--status-approved); border: 1px solid var(--status-approved); }
+    .status-rejected  { background: #e6394622; color: var(--status-rejected); border: 1px solid var(--status-rejected); }
+
+    .action-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .action-btn:hover {
+      border-color: var(--okiara);
+      color: var(--okiara);
+    }
+    .action-btn.del:hover { border-color: #e6394666; color: #e63946; }
+    .action-btn.approve { border-color: #4ade80; color: #4ade80; }
+    .action-btn.approve:hover { background: #4ade8022; }
+    .action-btn.reject { border-color: #e63946; color: #e63946; }
+    .action-btn.reject:hover { background: #e6394622; }
+
+    .reply-badge {
+      font-size: 10px;
+      color: var(--muted);
+      border: 1px dashed var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+    }
+
+    /* ---- Send form ---- */
+    #form-col {
+      width: 300px;
+      flex-shrink: 0;
+    }
+    #form-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    #form-card h2 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      color: var(--text);
+    }
+    .form-group { margin-bottom: 10px; }
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .form-group select,
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 7px 10px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-group select:focus,
+    .form-group input:focus,
+    .form-group textarea:focus { border-color: var(--okiara); }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+
+    #send-btn {
+      width: 100%;
+      background: var(--okiara);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: background 0.15s;
+    }
+    #send-btn:hover { background: #3451d1; }
+    #send-btn:disabled { background: var(--muted); cursor: not-allowed; }
+
+    #form-status {
+      margin-top: 8px;
+      font-size: 12px;
+      text-align: center;
+      min-height: 18px;
+    }
+    .success { color: #4ade80; }
+    .error   { color: #e63946; }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 60px 20px;
+      font-size: 13px;
+    }
+
+    /* ---- Chain bar ---- */
+    #chain-bar {
+      background: var(--accent);
+      padding: 6px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .chain-icon { color: #7c3aed; font-weight: 700; }
+    .chain-valid { color: #4ade80; }
+    .chain-invalid { color: #e63946; }
+    .chain-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .chain-btn:hover { border-color: #7c3aed; color: #7c3aed; }
+
+    /* ---- Block info on cards ---- */
+    .block-info {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+      font-size: 10px;
+      color: var(--muted);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .block-num {
+      background: #7c3aed;
+      color: #fff;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+    .hash-val {
+      opacity: 0.7;
+      cursor: pointer;
+    }
+    .hash-val:hover { opacity: 1; color: #c4b5fd; }
+  </style>
+</head>
+<body>
+
+<!-- Status bar -->
+<div id="statusbar">
+  <h1>Agent Exchange &mdash; OkiAra &#x2194; FalkVelt</h1>
+  <span class="dot" id="conn-dot"></span>
+  <span id="conn-label">Connected</span>
+  <span id="msg-count">0 messages</span>
+  <span id="refresh-countdown">Refresh in 5s</span>
+</div>
+
+<!-- Chain bar -->
+<div id="chain-bar">
+  <span class="chain-icon">&#x26D3; Chain</span>
+  <span id="chain-blocks">0 blocks</span>
+  <span id="chain-head">HEAD: ---</span>
+  <span id="chain-valid">--</span>
+  <span id="chain-github">GitHub: --</span>
+  <button class="chain-btn" onclick="verifyChain()">Verify</button>
+</div>
+
+<div class="main-wrapper">
+
+  <!-- Feed column -->
+  <div id="feed-col">
+    <div id="feed-header">
+      <h2>Messages</h2>
+      <div class="filter-bar">
+        <select id="filter-to" onchange="applyFilters()">
+          <option value="">All recipients</option>
+          <option value="okiara">To OkiAra</option>
+          <option value="falkvelt">To FalkVelt</option>
+        </select>
+        <select id="filter-status" onchange="applyFilters()">
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="read">Read</option>
+          <option value="processed">Processed</option>
+          <option value="archived">Archived</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <select id="filter-type" onchange="applyFilters()">
+          <option value="">All types</option>
+          <option value="task">Task</option>
+          <option value="response">Response</option>
+          <option value="notification">Notification</option>
+          <option value="config">Config</option>
+          <option value="approval">Approval</option>
+        </select>
+      </div>
+    </div>
+    <div id="feed"></div>
+  </div>
+
+  <!-- Send form -->
+  <div id="form-col">
+    <div id="form-card">
+      <h2>Send Message</h2>
+      <div class="form-group">
+        <label>From</label>
+        <select id="f-from">
+          <option value="okiara">OkiAra</option>
+          <option value="falkvelt">FalkVelt</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>To</label>
+        <select id="f-to">
+          <option value="falkvelt">FalkVelt</option>
+          <option value="okiara">OkiAra</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Type</label>
+        <select id="f-type">
+          <option value="notification">Notification</option>
+          <option value="task">Task</option>
+          <option value="response">Response</option>
+          <option value="config">Config</option>
+          <option value="approval">Approval</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Priority</label>
+        <select id="f-priority">
+          <option value="normal">Normal</option>
+          <option value="high">High</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Subject</label>
+        <input id="f-subject" type="text" maxlength="200" placeholder="Message subject..." />
+      </div>
+      <div class="form-group">
+        <label>Body</label>
+        <textarea id="f-body" maxlength="10000" placeholder="Message body..."></textarea>
+      </div>
+      <button id="send-btn" onclick="sendMessage()">Send</button>
+      <div id="form-status"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ---- State ----
+  let messages = [];
+  let countdown = 5;
+  let countdownTimer = null;
+
+  // ---- Filters ----
+  function getFilters() {
+    return {
+      to:     document.getElementById('filter-to').value,
+      status: document.getElementById('filter-status').value,
+      type:   document.getElementById('filter-type').value,
+    };
+  }
+
+  function applyFilters() {
+    renderFeed(messages);
+  }
+
+  // ---- Fetch messages ----
+  async function fetchMessages() {
+    const params = new URLSearchParams({ limit: 200 });
+    const f = getFilters();
+    if (f.to)     params.set('to', f.to);
+    if (f.status) params.set('status', f.status);
+    if (f.type)   params.set('type', f.type);
+
+    try {
+      const res = await fetch('/messages?' + params.toString());
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      messages = await res.json();
+      setConnected(true);
+      renderFeed(messages);
+      document.getElementById('msg-count').textContent = messages.length + ' message' + (messages.length !== 1 ? 's' : '');
+    } catch (e) {
+      setConnected(false);
+      console.error('Fetch failed:', e);
+    }
+  }
+
+  function setConnected(ok) {
+    const dot   = document.getElementById('conn-dot');
+    const label = document.getElementById('conn-label');
+    if (ok) {
+      dot.classList.remove('offline');
+      label.textContent = 'Connected';
+    } else {
+      dot.classList.add('offline');
+      label.textContent = 'Offline';
+    }
+  }
+
+  // ---- Render ----
+  function agentBadge(name) {
+    const lower = (name || '').toLowerCase();
+    let cls = 'agent-other';
+    if (lower === 'okiara')   cls = 'agent-okiara';
+    if (lower === 'falkvelt') cls = 'agent-falkvelt';
+    return `<span class="agent-badge ${cls}">${escHtml(name)}</span>`;
+  }
+
+  function typeBadge(type) {
+    return `<span class="type-badge type-${escAttr(type)}">${escHtml(type)}</span>`;
+  }
+
+  function prioBadge(prio) {
+    return `<span class="prio-badge prio-${escAttr(prio)}">${escHtml(prio)}</span>`;
+  }
+
+  function statusPill(status) {
+    return `<span class="status-pill status-${escAttr(status)}">${escHtml(status)}</span>`;
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+    } catch { return iso; }
+  }
+
+  function renderFeed(msgs) {
+    const feed = document.getElementById('feed');
+    if (!msgs.length) {
+      feed.innerHTML = '<div class="empty-state">No messages yet. Send one!</div>';
+      return;
+    }
+
+    feed.innerHTML = msgs.map(m => {
+      const replyBadge = m.in_reply_to
+        ? `<span class="reply-badge" title="${escAttr(m.in_reply_to)}">reply</span>`
+        : '';
+
+      let actionButtons = '';
+      if (m.type === 'approval' && m.status === 'pending') {
+        actionButtons = `
+          <button class="action-btn approve" onclick="markStatus('${escAttr(m.id)}', 'approved')">Одобрить</button>
+          <button class="action-btn reject" onclick="markStatus('${escAttr(m.id)}', 'rejected')">Отклонить</button>
+        `;
+      } else {
+        const readBtn = (m.status === 'pending')
+          ? `<button class="action-btn" onclick="markStatus('${escAttr(m.id)}', 'read')">Mark read</button>`
+          : '';
+        const processBtn = (m.status === 'read')
+          ? `<button class="action-btn" onclick="markStatus('${escAttr(m.id)}', 'processed')">Mark processed</button>`
+          : '';
+        const archiveBtn = (m.status !== 'archived')
+          ? `<button class="action-btn del" onclick="archiveMsg('${escAttr(m.id)}')">Archive</button>`
+          : '';
+        actionButtons = readBtn + processBtn + archiveBtn;
+      }
+
+      const readAtLine = m.read_at
+        ? `<span style="color:var(--muted);font-size:11px;"> &middot; Read ${formatDate(m.read_at)}</span>`
+        : '';
+
+      return `
+        <div class="msg-card status-${escAttr(m.status)}${m.type === 'approval' ? ' approval-card' : ''}" id="card-${escAttr(m.id)}">
+          <div class="msg-header">
+            ${agentBadge(m.from_agent)}
+            <span class="arrow">&#x2192;</span>
+            ${agentBadge(m.to_agent)}
+            ${typeBadge(m.type)}
+            ${prioBadge(m.priority)}
+            ${replyBadge}
+          </div>
+          <div class="msg-subject">${escHtml(m.subject)}</div>
+          ${m.body ? `<div class="msg-body">${escHtml(m.body)}</div>` : ''}
+          <div class="msg-footer">
+            <span class="msg-meta">${formatDate(m.created_at)}${readAtLine}</span>
+            ${statusPill(m.status)}
+            ${actionButtons}
+          </div>
+          ${m.block_number ? `
+          <div class="block-info">
+            <span class="block-num">#${m.block_number}</span>
+            <span class="hash-val" title="${escAttr(m.block_hash || '')}" onclick="navigator.clipboard.writeText('${escAttr(m.block_hash || '')}')">
+              ${m.block_hash ? m.block_hash.substring(0, 12) + '...' : '---'}
+            </span>
+            <span style="opacity:0.4;">prev:</span>
+            <span class="hash-val" title="${escAttr(m.prev_hash || '')}">
+              ${m.prev_hash ? m.prev_hash.substring(0, 8) + '...' : '---'}
+            </span>
+          </div>` : ''}
+        </div>`;
+    }).join('');
+  }
+
+  // ---- Actions ----
+  async function markStatus(id, status) {
+    try {
+      const res = await fetch(`/messages/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      await fetchMessages();
+    } catch (e) {
+      console.error('markStatus failed:', e);
+    }
+  }
+
+  async function archiveMsg(id) {
+    try {
+      const res = await fetch(`/messages/${id}`, { method: 'DELETE' });
+      if (!res.ok && res.status !== 204) throw new Error('HTTP ' + res.status);
+      await fetchMessages();
+    } catch (e) {
+      console.error('archive failed:', e);
+    }
+  }
+
+  async function sendMessage() {
+    const btn    = document.getElementById('send-btn');
+    const status = document.getElementById('form-status');
+    const subject = document.getElementById('f-subject').value.trim();
+
+    if (!subject) {
+      status.innerHTML = '<span class="error">Subject is required.</span>';
+      return;
+    }
+
+    btn.disabled = true;
+    status.textContent = 'Sending...';
+
+    const payload = {
+      from_agent: document.getElementById('f-from').value,
+      to_agent:   document.getElementById('f-to').value,
+      type:       document.getElementById('f-type').value,
+      priority:   document.getElementById('f-priority').value,
+      subject:    subject,
+      body:       document.getElementById('f-body').value.trim(),
+    };
+
+    try {
+      const res = await fetch('/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'HTTP ' + res.status);
+      }
+      status.innerHTML = '<span class="success">Sent!</span>';
+      document.getElementById('f-subject').value = '';
+      document.getElementById('f-body').value = '';
+      await fetchMessages();
+    } catch (e) {
+      status.innerHTML = `<span class="error">${escHtml(String(e.message))}</span>`;
+    } finally {
+      btn.disabled = false;
+      setTimeout(() => { status.textContent = ''; }, 3000);
+    }
+  }
+
+  // ---- Chain ----
+  async function fetchChainStatus() {
+    try {
+      const res = await fetch('/chain/status');
+      if (!res.ok) return;
+      const d = await res.json();
+      document.getElementById('chain-blocks').textContent = d.last_block_number + ' blocks';
+      document.getElementById('chain-head').textContent = 'HEAD: ' + d.last_block_hash;
+      document.getElementById('chain-github').textContent = d.github_synced
+        ? 'GitHub: ' + d.github_file_sha
+        : 'GitHub: not synced';
+    } catch (e) { console.error('chain status:', e); }
+  }
+
+  async function verifyChain() {
+    const el = document.getElementById('chain-valid');
+    el.textContent = 'Verifying...';
+    el.className = '';
+    try {
+      const res = await fetch('/chain/verify');
+      const d = await res.json();
+      if (d.valid) {
+        el.className = 'chain-valid';
+        el.textContent = 'Valid (' + d.blocks + ' blocks)';
+      } else {
+        el.className = 'chain-invalid';
+        el.textContent = 'INVALID: ' + d.errors.length + ' errors';
+        console.error('Chain errors:', d.errors);
+      }
+    } catch (e) { el.textContent = 'Error'; }
+  }
+
+  // ---- Auto-refresh ----
+  function startCountdown() {
+    clearInterval(countdownTimer);
+    countdown = 5;
+    countdownTimer = setInterval(() => {
+      countdown--;
+      document.getElementById('refresh-countdown').textContent = `Refresh in ${countdown}s`;
+      if (countdown <= 0) {
+        clearInterval(countdownTimer);
+        Promise.all([fetchMessages(), fetchChainStatus()]).then(startCountdown);
+      }
+    }, 1000);
+  }
+
+  // ---- Helpers ----
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+  function escAttr(str) { return escHtml(str); }
+
+  // ---- Init ----
+  Promise.all([fetchMessages(), fetchChainStatus()]).then(startCountdown);
+</script>
+</body>
+</html>
